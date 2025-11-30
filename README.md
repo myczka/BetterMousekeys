@@ -3,7 +3,7 @@
 ### What It Is
 - A small Windows program that moves the actual system cursor using keyboard keys with smooth physics (acceleration + inertia + friction).
 - Works globally (uses a low-level keyboard hook), so you can control other apps and the desktop without a physical mouse.
-- Toggle the controller on/off with F12.
+- Toggle the controller on/off with Capslock.
 - Click keys: Z => left-click, X => right-click (while controller is enabled).
 - Quit the app with Ctrl+Shift+Q.
 
