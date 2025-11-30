@@ -1,4 +1,3 @@
-```markdown
 # Better Mouse Keys (smooth) - README
 ============================
 
