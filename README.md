@@ -1,7 +1,6 @@
 # <i>Better Mouse Keys</i>
-============================
 
-What this does
+### What It Is
 - A small Windows program that moves the actual system cursor using keyboard keys with smooth physics (acceleration + inertia + friction).
 - Works globally (uses a low-level keyboard hook), so you can control other apps and the desktop without a physical mouse.
 - Toggle the controller on/off with F12.
