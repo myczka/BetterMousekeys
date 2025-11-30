@@ -1,4 +1,4 @@
-# Better Mouse Keys (smooth) - README
+# <i>Better Mouse Keys</i>
 ============================
 
 What this does
