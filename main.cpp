@@ -2,35 +2,37 @@
 mousekeys.cpp
 
 A single-file Windows C++ program that lets you control the system mouse cursor
-with the keyboard using smooth, physics-style movement (like the "heart"
-movement in Undertale/Deltarune), but moving the real OS cursor so you can
-interact with other apps and the desktop.
+with the keyboard using smooth, physics-style movement (like the TouHou
+Project), but moves the real OS cursor so you can interact with other apps and
+the desktop.
+
+Controls
+> Arrow keys or H, J, K, and L for movement
+> 'Z' for Left Click
+> 'X' for Right Click
+> Capslock On/Off for Enable/Disable respectively
 
 Features
-- Global low-level keyboard hook (WH_KEYBOARD_LL) so arrow keys / WASD control
-the cursor even when other windows are focused.
+- Global low-level keyboard hook (WH_KEYBOARD_LL) so you can control the cursor
+even when other windows are focused.
+- Starts off---capslock must be clicked to activate
 - Smooth acceleration, velocity, and friction (configurable).
-- Toggle the control on/off with F12.
-- Optional keys to send mouse clicks (Z = left click, X = right click) while
-control enabled.
 - Safely swallows the movement keys while control is enabled so they don't also
 act in other apps.
 - Runs as a simple user-mode app (no admin required normally).
-
-Build (MSVC):
-  cl /EHsc /O2 mousekeys.cpp user32.lib gdi32.lib
-
-Build (MinGW):
-  g++ -std=c++17 -O2 -mwindows mousekeys.cpp -lgdi32 -luser32 -o mousekeys.exe
 
 Notes:
 - The keyboard hook is per-session; it doesn't require a separate DLL for the
 low-level hook.
 - Antivirus or system security software sometimes flags programs that install
 global hooks.
-- Be careful: when the controller is enabled, arrow keys/WASD will not be
-delivered to other apps. Toggle with F12 to return normal keyboard behavior.
+- Be careful: when the controller is enabled, arrow keys/HJKL will not be
+delivered to other apps. Toggle with Capslock to return normal keyboard
+behavior.
 
+Build (MSVC): cl /EHsc /O2 mousekeys.cpp user32.lib gdi32.lib
+
+Build (MinGW): g++ -std=c++17 -O2 -mwindows mousekeys.cpp -lgdi32 -luser32 -o mousekeys.exe
 */
 
 #define WIN32_LEAN_AND_MEAN
@@ -56,7 +58,7 @@ static constexpr int RIGHT_CLICK_KEY = 'X';
 // Key state storage (we'll track both arrow keys and WASD)
 std::atomic<bool> key_up(false), key_down(false), key_left(false),
     key_right(false);
-std::atomic<bool> key_w(false), key_a(false), key_s(false), key_d(false);
+std::atomic<bool> key_k(false), key_h(false), key_j(false), key_l(false);
 std::atomic<bool> leftClickPressed(false), rightClickPressed(false);
 
 // Controller state
@@ -146,29 +148,29 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
       if (isUp)
         key_right.store(false);
       return 1;
-    case 'W':
+    case 'K':
       if (isDown)
-        key_w.store(true);
+        key_k.store(true);
       if (isUp)
-        key_w.store(false);
+        key_k.store(false);
       return 1;
-    case 'S':
+    case 'J':
       if (isDown)
-        key_s.store(true);
+        key_j.store(true);
       if (isUp)
-        key_s.store(false);
+        key_j.store(false);
       return 1;
-    case 'A':
+    case 'H':
       if (isDown)
-        key_a.store(true);
+        key_h.store(true);
       if (isUp)
-        key_a.store(false);
+        key_h.store(false);
       return 1;
-    case 'D':
+    case 'L':
       if (isDown)
-        key_d.store(true);
+        key_l.store(true);
       if (isUp)
-        key_d.store(false);
+        key_l.store(false);
       return 1;
     case LEFT_CLICK_KEY:
       if (isDown)
@@ -223,13 +225,13 @@ void physicsLoop() {
     if (enabled.load()) {
       // Gather direction from key states
       float dx = 0.0f, dy = 0.0f;
-      if (key_up.load() || key_w.load())
+      if (key_up.load() || key_k.load())
         dy -= 1.0f;
-      if (key_down.load() || key_s.load())
+      if (key_down.load() || key_j.load())
         dy += 1.0f;
-      if (key_left.load() || key_a.load())
+      if (key_left.load() || key_h.load())
         dx -= 1.0f;
-      if (key_right.load() || key_d.load())
+      if (key_right.load() || key_l.load())
         dx += 1.0f;
 
       // Normalize so diagonal isn't faster
