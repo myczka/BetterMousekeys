@@ -283,11 +283,6 @@ void physicsLoop() {
         dy /= speed;
       }
 
-      // Vanilla Movement
-      // float move = (MAX_SPEED_PIX_PER_S/SPEED_MODIFIER) * (float)dt;
-      // px += dx * move;
-      // py += dy * move;
-
       float speedMult = shiftPressed.load() ? 0.4f : 1.0f;
       float move = MAX_SPEED_PIX_PER_S * speedMult * (float)dt;
       px += dx * move;
