@@ -45,21 +45,23 @@ Build (MinGW): g++ -std=c++17 -O2 -mwindows mousekeys.cpp -lgdi32 -luser32 -o mo
 
 // --- Configuration (tweak to match feel) ---
 static constexpr float ACCEL_PIX_PER_S2 = 10000.0f; // acceleration when key held
-static constexpr float MAX_SPEED_PIX_PER_S = 10000.0f; // top speed in pixels/sec
-static constexpr float FRICTION_PER_S =
-    6.0f; // exponential friction factor (larger = more damping)
+static constexpr float MAX_SPEED_PIX_PER_S = 800.0f; // top speed in pixels/sec
+static constexpr float FRICTION_PER_S = 1000.0f; // exponential friction factor (larger = more damping)
 static constexpr int UPDATES_PER_SEC = 120; // physics loop frequency
+
 // Keys: movement keys and click keys
 static constexpr int TOGGLE_KEY = VK_CAPITAL; // press to toggle enable/disable (CAPS LOCK)
 static constexpr int LEFT_CLICK_KEY = 'Z';
 static constexpr int RIGHT_CLICK_KEY = 'X';
-// ----------------------------------------------------------------
 
 // Key state storage (we'll track both arrow keys and WASD)
-std::atomic<bool> key_up(false), key_down(false), key_left(false),
-    key_right(false);
+std::atomic<bool> key_up(false), key_down(false), key_left(false), key_right(false);
 std::atomic<bool> key_k(false), key_h(false), key_j(false), key_l(false);
 std::atomic<bool> leftClickPressed(false), rightClickPressed(false);
+std::atomic<bool> shiftPressed(false);
+
+// Add these globals for tracking previous mouse-key state (for drag/cleanup)
+std::atomic<bool> g_prevLeft(false), g_prevRight(false);
 
 // Controller state
 std::atomic<bool> enabled(false);
@@ -84,6 +86,20 @@ void sendMouseClick(bool left) {
   SendInput(2, inputs, sizeof(INPUT));
 }
 
+void sendMouseDown(bool left) {
+  INPUT input = {};
+  input.type = INPUT_MOUSE;
+  input.mi.dwFlags = left ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_RIGHTDOWN;
+  SendInput(1, &input, sizeof(INPUT));
+}
+
+void sendMouseUp(bool left) {
+  INPUT input = {};
+  input.type = INPUT_MOUSE;
+  input.mi.dwFlags = left ? MOUSEEVENTF_LEFTUP : MOUSEEVENTF_RIGHTUP;
+  SendInput(1, &input, sizeof(INPUT));
+}
+
 // Low-level keyboard hook procedure
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
   if (nCode < 0) {
@@ -94,31 +110,23 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
   bool isDown = (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN);
   bool isUp = (wParam == WM_KEYUP || wParam == WM_SYSKEYUP);
 
-  // Toggle on key down of TOGGLE_KEY (F12)
+  // Toggle on key down of TOGGLE_KEY (Caps Lock)
   if (isDown && kb->vkCode == TOGGLE_KEY) {
     bool now = enabled.load();
     enabled.store(!now);
-    // Optional: show a brief toast via Tray or FlashWindow? We'll beep and
-    // print.
-    if (!now) {
-      MessageBeep(MB_OK);
-      // Note: printing to console is optional; this app is normally a GUI app.
-    } else {
-      MessageBeep(MB_ICONEXCLAMATION);
-    }
-    // Consume the toggle key so it doesn't reach other apps
+
     return 1;
   }
 
-  // Quit key (Ctrl+Shift+Q) - exit app
-  if (isDown && kb->vkCode == 'Q') {
-    bool ctrl = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
-    bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
-    if (ctrl && shift) {
-      running.store(false);
-      return 1;
-    }
-  }
+  // Modify speed when shift is held
+  // bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+  // if (shift) {
+  //   SPEED_MODIFIER = 2.0f;
+  //   return 1;
+  // }
+  // else {
+  //   SPEED_MODIFIER = 1.0f;
+  // }
 
   // Map movement keys when controller is enabled
   if (enabled.load()) {
@@ -184,6 +192,12 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
       if (isUp)
         rightClickPressed.store(false);
       return 1;
+    case VK_LSHIFT:
+      if (isDown)
+        shiftPressed.store(true);
+      if (isUp)
+        shiftPressed.store(false);
+      return 1; // allow the key to pass through to other apps
     default:
       break;
     }
@@ -241,26 +255,43 @@ void physicsLoop() {
         dy /= len;
       }
 
-      // Apply acceleration
-      vx += dx * ACCEL_PIX_PER_S2 * dt;
-      vy += dy * ACCEL_PIX_PER_S2 * dt;
+      // // Apply acceleration
+      // vx += dx * ACCEL_PIX_PER_S2 * dt;
+      // vy += dy * ACCEL_PIX_PER_S2 * dt;
 
-      // Apply exponential friction
-      float decay = std::expf(-FRICTION_PER_S * (float)dt);
-      vx *= decay;
-      vy *= decay;
+      // // Apply exponential friction
+      // float decay = std::expf(-FRICTION_PER_S * (float)dt);
+      // vx *= decay;
+      // vy *= decay;
 
-      // Clamp speed
-      double speed = std::hypot(vx, vy);
-      if (speed > MAX_SPEED_PIX_PER_S) {
-        double s = MAX_SPEED_PIX_PER_S / speed;
-        vx *= s;
-        vy *= s;
+      // // Clamp speed
+      // double speed = std::hypot(vx, vy);
+      // if (speed > MAX_SPEED_PIX_PER_S) {
+      //   double s = MAX_SPEED_PIX_PER_S / speed;
+      //   vx *= s;
+      //   vy *= s;
+      // }
+
+      // // Integrate
+      // px += vx * dt;
+      // py += vy * dt;
+
+      // Normalize so diagonal isn't faster
+      float speed = std::hypot(dx, dy);
+      if (speed > 0.0f) {
+        dx /= speed;
+        dy /= speed;
       }
 
-      // Integrate
-      px += vx * dt;
-      py += vy * dt;
+      // Vanilla Movement
+      // float move = (MAX_SPEED_PIX_PER_S/SPEED_MODIFIER) * (float)dt;
+      // px += dx * move;
+      // py += dy * move;
+
+      float speedMult = shiftPressed.load() ? 0.4f : 1.0f;
+      float move = MAX_SPEED_PIX_PER_S * speedMult * (float)dt;
+      px += dx * move;
+      py += dy * move;
 
       // Clamp to screen bounds
       int screenW = GetSystemMetrics(SM_CXSCREEN);
@@ -288,15 +319,30 @@ void physicsLoop() {
       // If click keys pressed, generate clicks
       // We handle click on key-down: leftClickPressed transitions from
       // false->true.
-      static bool prevLeft = false, prevRight = false;
+      bool prevLeft = g_prevLeft.load();
+      bool prevRight = g_prevRight.load();
       bool curLeft = leftClickPressed.load();
       bool curRight = rightClickPressed.load();
-      if (curLeft && !prevLeft)
-        sendMouseClick(true);
-      if (curRight && !prevRight)
-        sendMouseClick(false);
-      prevLeft = curLeft;
-      prevRight = curRight;
+      // if (curLeft && !prevLeft)
+      //   sendMouseClick(true);
+      // if (curRight && !prevRight)
+      //   sendMouseClick(false);
+      if (curLeft && !prevLeft) {
+        sendMouseDown(true); // start a drag (mouse button down)
+      }
+      if (!curLeft && prevLeft) {
+        sendMouseUp(true); // end drag (mouse button up)
+      }
+
+      if (curRight && !prevRight) {
+        sendMouseDown(false);
+      }
+      if (!curRight && prevRight) {
+        sendMouseUp(false);
+      }
+
+      g_prevLeft.store(curLeft);
+      g_prevRight.store(curRight);
     } else {
       // If disabled, slowly zero velocity (so it doesn't fling when re-enabled)
       vx *= 0.6;
@@ -331,14 +377,13 @@ HWND createMessageWindow(HINSTANCE hInstance) {
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
   // Optional: allocate console for debug output
-  AllocConsole();
-  FILE *f;
-  freopen_s(&f, "CONOUT$", "w", stdout);
-    std::cout
-      << "MouseKeys: starting. Press CAPS LOCK to toggle, Ctrl+Shift+Q to quit.\n";
-  std::cout << "When enabled: Arrow keys or WASD move the cursor. Z = left click, X = right click.\n";
 
-  std::cout << std::endl << "Alright, use CAPS LOCK to toggle mousekeys. --Dante";
+  // AllocConsole();
+  // FILE *f;
+  // freopen_s(&f, "CONOUT$", "w", stdout);
+  // std::cout << "MouseKeys: starting. Press CAPS LOCK to toggle, Ctrl+Shift+Q to quit.\n";
+  // std::cout << "When enabled: Arrow keys or WASD move the cursor. Z = left click, X = right click.\n";
+  // std::cout << std::endl << "Alright, use CAPS LOCK to toggle mousekeys. --Dante";
 
   // Create message-only window (so hook thread has a message pump)
   HWND hwnd = createMessageWindow(hInstance);
@@ -346,10 +391,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
   // Install low-level keyboard hook on this thread (global for the session)
   g_hHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
   if (!g_hHook) {
-    std::cerr << "Failed to install keyboard hook. Error: " << GetLastError()
-              << "\n";
-    MessageBoxW(NULL, L"Failed to install keyboard hook. Exiting.", L"mousekeys",
-               MB_ICONERROR);
+    //std::cerr << "Failed to install keyboard hook. Error: " << GetLastError() << "\n";
+    MessageBoxW(NULL, L"Failed to install keyboard hook. Exiting.", L"mousekeys", MB_ICONERROR);
     return 1;
   }
 
@@ -373,8 +416,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
   if (phys.joinable())
     phys.join();
 
-  std::cout << "Exiting.\n";
+  //std::cout << "Exiting.\n";
+
   // Free console optionally
-  FreeConsole();
+  // FreeConsole();
+  // After physics and hook cleanup (before return)
+  if (g_prevLeft.load())
+    sendMouseUp(true);
+  if (g_prevRight.load())
+    sendMouseUp(false);
   return 0;
 }
