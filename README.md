@@ -1,10 +1,9 @@
 # <i>Better Mouse Keys</i>
 
-## What It Is
-Better Mouse Keys is a small C++ program that allows the user to control the actual system cursor using keyboard keys. It works globally (uses a low-level keyboard hook), so you can control other apps and the desktop without a physical mouse. This program aims to provide proper keyboard-mouse control to the user that Windows' Mouse Keys fail to deliver. Instead of a snap-to-grid movement system, this program implements mouse control emulation to allow seamless and intuitive movement similar to that of games like <i>UNDERTALE</i> and the <i>Touhou Project</i>.
+> Better Mouse Keys is a small C++ program that allows the user to control the actual system cursor using keyboard keys. It works globally (uses a low-level keyboard hook), so you can control other apps and the desktop without a physical mouse. This program aims to provide proper keyboard-mouse control to the user that Windows' Mouse Keys fail to deliver. Instead of a snap-to-grid movement system, this program implements mouse control emulation to allow seamless and intuitive movement similar to that of games like <i>UNDERTALE</i> and the <i>Touhou Project</i>.
 
 ### Controls
-- Toggle the controller on/off with Capslock.
+- Toggle the controller on/off with Right Shift.
 - Arrow keys/hjkl for directional control
 - 'z' for left-click
 - 'x' for right-click
