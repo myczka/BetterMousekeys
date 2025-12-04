@@ -54,8 +54,7 @@ static constexpr float FRICTION_PER_S =
 static constexpr int UPDATES_PER_SEC = 120; // physics loop frequency
 
 // Keys: movement keys and click keys
-static constexpr int TOGGLE_KEY =
-VK_RSHIFT; // press to toggle enable/disable (CAPS LOCK)
+//static constexpr int TOGGLE_KEY = VK_RSHIFT; // press to toggle enable/disable (CAPS LOCK)
 static constexpr int LEFT_CLICK_KEY = 'Z';
 static constexpr int RIGHT_CLICK_KEY = 'X';
 
@@ -116,8 +115,8 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
    bool isDown = (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN);
    bool isUp = (wParam == WM_KEYUP || wParam == WM_SYSKEYUP);
    
-   // Toggle on key down of TOGGLE_KEY (Caps Lock)
-   if (isDown && kb->vkCode == TOGGLE_KEY) {
+   // Toggle on key down of Right Shift or Caps Lock
+   if (isDown && (kb->vkCode == VK_RSHIFT || kb->vkCode == VK_CAPITAL)) {
       bool now = enabled.load();
       enabled.store(!now);
       
@@ -376,8 +375,8 @@ HWND createMessageWindow(HINSTANCE hInstance) {
       // Install low-level keyboard hook on this thread (global for the session)
       g_hHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
       if (!g_hHook) {
-         // std::cerr << "Failed to install keyboard hook. Error: " << GetLastError()
-         // << "\n";
+         // std::cerr << "Failed to install keyboard hook. Error: " << GetLastError() << "\n";
+         
          MessageBoxW(NULL, L"Failed to install keyboard hook. Exiting.",
             L"mousekeys", MB_ICONERROR);
             return 1;
@@ -393,24 +392,20 @@ HWND createMessageWindow(HINSTANCE hInstance) {
             DispatchMessage(&msg);
          }
          
-         // cleanup
+         // Cleanup
          running.store(false);
          if (g_hHook) {
             UnhookWindowsHookEx(g_hHook);
             g_hHook = nullptr;
          }
          // Wait for physics thread to finish
-         if (phys.joinable())
-         phys.join();
+         if (phys.joinable()) phys.join();
          
-         // std::cout << "Exiting.\n";
-         
-         // Free console optionally
+         //// Free console optionally
          // FreeConsole();
+
          // After physics and hook cleanup (before return)
-         if (g_prevLeft.load())
-         sendMouseUp(true);
-         if (g_prevRight.load())
-         sendMouseUp(false);
+         if (g_prevLeft.load()) sendMouseUp(true);
+         if (g_prevRight.load()) sendMouseUp(false);
          return 0;
       }
