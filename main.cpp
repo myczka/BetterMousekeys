@@ -359,15 +359,13 @@ HWND createMessageWindow(HINSTANCE hInstance) {
    }
    
    int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
-      // Optional: allocate console for debug output
-      
+      //// Optional: allocate console for debug output
       // AllocConsole();
       // FILE *f;
       // freopen_s(&f, "CONOUT$", "w", stdout);
       // std::cout << "MouseKeys: starting. Press CAPS LOCK to toggle, Ctrl+Shift+Q
       // to quit.\n"; std::cout << "When enabled: Arrow keys or WASD move the
-      // cursor. Z = left click, X = right click.\n"; std::cout << std::endl <<
-      // "Alright, use CAPS LOCK to toggle mousekeys. --Dante";
+      // cursor. Z = left click, X = right click.\n"; std::cout << std::endl;
       
       // Create message-only window (so hook thread has a message pump)
       HWND hwnd = createMessageWindow(hInstance);
@@ -376,7 +374,7 @@ HWND createMessageWindow(HINSTANCE hInstance) {
       g_hHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
       if (!g_hHook) {
          // std::cerr << "Failed to install keyboard hook. Error: " << GetLastError() << "\n";
-         
+
          MessageBoxW(NULL, L"Failed to install keyboard hook. Exiting.",
             L"mousekeys", MB_ICONERROR);
             return 1;
