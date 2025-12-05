@@ -39,28 +39,22 @@ mousekeys.exe
 #define WIN32_LEAN_AND_MEAN
 #include <atomic>
 #include <chrono>
+#include <thread>
 #include <cmath>
 #include <windows.h>
 
-// #include <iostream>
-#include <thread>
-
 // --- Configuration (tweak to match feel) ---
-static constexpr float ACCEL_PIX_PER_S2 =
-10000.0f; // acceleration when key held
+static constexpr float ACCEL_PIX_PER_S2 = 10000.0f; // ammount of acceleration when key held
 static constexpr float MAX_SPEED_PIX_PER_S = 700.0f; // top speed in pixels/sec
-static constexpr float FRICTION_PER_S =
-1000.0f; // exponential friction factor (larger = more damping)
+static constexpr float FRICTION_PER_S = 1000.0f; // amount of friction
 static constexpr int UPDATES_PER_SEC = 120; // physics loop frequency
 
 // Keys: movement keys and click keys
-//static constexpr int TOGGLE_KEY = VK_RSHIFT; // press to toggle enable/disable (CAPS LOCK)
 static constexpr int LEFT_CLICK_KEY = 'Z';
 static constexpr int RIGHT_CLICK_KEY = 'X';
 
 // Key state storage (we'll track both arrow keys and WASD)
-std::atomic<bool> key_up(false), key_down(false), key_left(false),
-key_right(false);
+std::atomic<bool> key_up(false), key_down(false), key_left(false), key_right(false);
 std::atomic<bool> key_k(false), key_h(false), key_j(false), key_l(false);
 std::atomic<bool> leftClickPressed(false), rightClickPressed(false);
 std::atomic<bool> shiftPressed(false);
@@ -122,16 +116,6 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
       
       return 1;
    }
-   
-   // Modify speed when shift is held
-   // bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
-   // if (shift) {
-   //   SPEED_MODIFIER = 2.0f;
-   //   return 1;
-   // }
-   // else {
-   //   SPEED_MODIFIER = 1.0f;
-   // }
    
    // Map movement keys when controller is enabled
    if (enabled.load()) {
@@ -209,10 +193,11 @@ void physicsLoop() {
       p.y = GetSystemMetrics(SM_CYSCREEN) / 2;
    }
    
+   // Vars initialize/reinitialize
    double px = (double)p.x;
    double py = (double)p.y;
-   double vx = 0.0;
-   double vy = 0.0;
+   // double vx = 0.0;
+   // double vy = 0.0;
    float dx = 0.0f;
    float dy = 0.0f;
    
@@ -233,7 +218,7 @@ void physicsLoop() {
       
       // If control enabled
       if (enabled.load()) {
-         // Reinitialize vectors
+         // Reinitialize vectors so cursor stops moving when no dir is pressed
          dx = 0.0f;
          dy = 0.0f;
          
@@ -282,19 +267,19 @@ void physicsLoop() {
          int screenH = GetSystemMetrics(SM_CYSCREEN);
          if (px < 0.0) {
             px = 0.0;
-            vx = 0.0;
+            //vx = 0.0;
          }
          if (py < 0.0) {
             py = 0.0;
-            vy = 0.0;
+            //vy = 0.0;
          }
          if (px > screenW - 1) {
             px = screenW - 1;
-            vx = 0.0;
+            //vx = 0.0;
          }
          if (py > screenH - 1) {
             py = screenH - 1;
-            vy = 0.0;
+            //vy = 0.0;
          }
          
          // Move cursor
@@ -321,16 +306,15 @@ void physicsLoop() {
          g_prevLeft.store(curLeft);
          g_prevRight.store(curRight);
       } else {
-         // If disabled, slowly zero velocity (so it doesn't fling when re-enabled)
+         // // If disabled, slowly zero velocity (so it doesn't fling when re-enabled)
          // vx *= 0.6;
          // vy *= 0.6;
          
-         // If disabled (vanilla), set velocity to 0
-         dx *= 0.0;
-         dy *= 0.0;
+         // If disabled (vanilla), set velocity to zero << *for some reason this isn't necessary*
+         // dx *= 0.0;
+         // dy *= 0.0;
          
-         // Keeps px/py synced with current cursor location (in case user moved
-         // with mouse)
+         // Keeps px/py synced with current cursor location (when user moves with mouse)
          POINT curp;
          if (GetCursorPos(&curp)) {
             px = (double)curp.x;
@@ -343,8 +327,7 @@ void physicsLoop() {
    }
 }
 
-// Minimal hidden window to keep message loop alive (hooks require a message
-// loop in the thread)
+// Minimal hidden window to keep message loop alive (hooks require a message loop in the thread)
 HWND createMessageWindow(HINSTANCE hInstance) {
    const wchar_t CLASSNAME[] = L"MouseKeysHiddenWindow";
    WNDCLASSEXW wcx = {};
@@ -356,54 +339,55 @@ HWND createMessageWindow(HINSTANCE hInstance) {
    HWND hwnd = CreateWindowExW(0, CLASSNAME, L"MouseKeysHidden", 0, 0, 0, 0, 0,
       HWND_MESSAGE, NULL, hInstance, NULL);
       return hwnd;
+}
+   
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
+   //// Optional: allocate console for debug output
+   // AllocConsole();
+   // FILE *f;
+   // freopen_s(&f, "CONOUT$", "w", stdout);
+   // std::cout << "MouseKeys: starting. Press CAPS LOCK to toggle, Ctrl+Shift+Q
+   // to quit.\n"; std::cout << "When enabled: Arrow keys or WASD move the
+   // cursor. Z = left click, X = right click.\n"; std::cout << std::endl;
+   
+   // Create message-only window (so hook thread has a message pump)
+   HWND hwnd = createMessageWindow(hInstance);
+   
+   // Install low-level keyboard hook on this thread (global for the session)
+   g_hHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
+   
+   // On keyboard hook install failure
+   if (!g_hHook) {
+      MessageBoxW(NULL, L"Failed to install keyboard hook. Exiting.",L"mousekeys", MB_ICONERROR);
+      return 1;
+   }
+      
+   // Start physics thread
+   std::thread phys(physicsLoop);
+   
+   // Simple message loop to keep process alive and handle hook/event dispatch
+   MSG msg;
+   while (running.load() && GetMessage(&msg, NULL, 0, 0)) {
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
    }
    
-   int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
-      //// Optional: allocate console for debug output
-      // AllocConsole();
-      // FILE *f;
-      // freopen_s(&f, "CONOUT$", "w", stdout);
-      // std::cout << "MouseKeys: starting. Press CAPS LOCK to toggle, Ctrl+Shift+Q
-      // to quit.\n"; std::cout << "When enabled: Arrow keys or WASD move the
-      // cursor. Z = left click, X = right click.\n"; std::cout << std::endl;
-      
-      // Create message-only window (so hook thread has a message pump)
-      HWND hwnd = createMessageWindow(hInstance);
-      
-      // Install low-level keyboard hook on this thread (global for the session)
-      g_hHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
-      if (!g_hHook) {
-         // std::cerr << "Failed to install keyboard hook. Error: " << GetLastError() << "\n";
+   // Cleanup
+   running.store(false);
+   if (g_hHook) {
+      UnhookWindowsHookEx(g_hHook);
+      g_hHook = nullptr;
+   }
 
-         MessageBoxW(NULL, L"Failed to install keyboard hook. Exiting.",
-            L"mousekeys", MB_ICONERROR);
-            return 1;
-         }
-         
-         // Start physics thread
-         std::thread phys(physicsLoop);
-         
-         // Simple message loop to keep process alive and handle hook/event dispatch
-         MSG msg;
-         while (running.load() && GetMessage(&msg, NULL, 0, 0)) {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-         }
-         
-         // Cleanup
-         running.store(false);
-         if (g_hHook) {
-            UnhookWindowsHookEx(g_hHook);
-            g_hHook = nullptr;
-         }
-         // Wait for physics thread to finish
-         if (phys.joinable()) phys.join();
-         
-         //// Free console optionally
-         // FreeConsole();
+   // Wait for physics thread to finish
+   if (phys.joinable()) phys.join();
+   
+   //// Free console optionally
+   // FreeConsole();
 
-         // After physics and hook cleanup (before return)
-         if (g_prevLeft.load()) sendMouseUp(true);
-         if (g_prevRight.load()) sendMouseUp(false);
-         return 0;
-      }
+   // After physics and hook cleanup (before return)
+   if (g_prevLeft.load()) sendMouseUp(true);
+   if (g_prevRight.load()) sendMouseUp(false);
+
+   return 0;
+}
