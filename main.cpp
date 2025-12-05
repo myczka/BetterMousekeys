@@ -353,7 +353,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int) {
    // Create message-only window (so hook thread has a message pump)
    HWND hwnd = createMessageWindow(hInstance);
    
-   // Install low-level keyboard hook on this thread (global for the session)
+   // Install low-level keyboard hook on the global thread (global for the session)
    g_hHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
    
    // On keyboard hook install failure
