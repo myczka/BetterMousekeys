@@ -5,7 +5,9 @@ Better Mouse Keys is a small C++ program that allows the user to control the act
 
 <div align="center">
 
-<img src=https://m.media-amazon.com/images/I/71E50xSwlgL.jpg/>
+<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR0V-edMA38bR-bQUg_FMjx9vILm3f6olad0A&s"/>
+
+</div>
 
 ### Controls
 - Turn on/off with <i>Right Shift</i> or <i>Caps Lock</i>.
