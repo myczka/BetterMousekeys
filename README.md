@@ -3,6 +3,11 @@ Better Mouse Keys is a small C++ program that allows the user to control the act
 
 > "Alright, partner. Keep on rollin', baby!" --Dante
 
+<p style="color:green; font-size:20px; text-align:center;">
+  Here's some text that is being styled using the style attribute.
+</p>
+
+
 ### Controls
 - Turn on/off with <i>Right Shift</i> or <i>Caps Lock</i>.
 - Arrow keys/hjkl for directional control
