@@ -4,11 +4,11 @@ Better Mouse Keys is a small C++ program that allows the user to control the act
 > "Alright, partner. Keep on rollin', baby!" --Dante
 
 ### Controls
-- Toggle the controller on/off with Right Shift or Caps Lock.
+- Toggle the controller on/off with <i>Right Shift</i> or <i>Caps Lock</i>.
 - Arrow keys/hjkl for directional control
 - 'z' for left-click
 - 'x' for right-click
-- Hold <i>'shift'</i> to reduce speed
+- Hold <i>Left Shift</i> to reduce speed
 
 ### Build instructions
 - You need a C++ compiler for Windows: MSVC (Visual Studio) or MinGW (g++)
