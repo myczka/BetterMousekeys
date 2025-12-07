@@ -5,7 +5,7 @@ Better Mouse Keys is a small C++ program that allows the user to control the act
 
 <div align="center">
 
-<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR0V-edMA38bR-bQUg_FMjx9vILm3f6olad0A&s"/>
+<!--<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR0V-edMA38bR-bQUg_FMjx9vILm3f6olad0A&s"/>-->
 
 </div>
 
@@ -31,3 +31,10 @@ Better Mouse Keys is a small C++ program that allows the user to control the act
 - Add an on-screen HUD or tray icon to show enabled/disabled.
 - Provide a configuration UI to set sensitivity and key bindings.
 - Persist settings or provide a system tray menu.
+
+
+<div align="center">
+
+Copyright (c) 2025 Jordan Myczka. All rights reserved.
+
+</div>
