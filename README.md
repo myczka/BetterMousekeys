@@ -7,8 +7,6 @@ Better Mouse Keys is a small C++ program that allows the user to control the act
 
 <img src="hjkl.png"/>
 
-<!--<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR0V-edMA38bR-bQUg_FMjx9vILm3f6olad0A&s"/>-->
-
 </div>
 
 ### Controls
