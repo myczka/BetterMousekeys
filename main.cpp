@@ -12,7 +12,6 @@ Controls
 > 'X' for Right Click
 > Capslock On/Off for Enable/Disable respectively
 > R_Shift also works as a toggle
-> Why
 
 Features
 - Global low-level keyboard hook (WH_KEYBOARD_LL) so you can control the cursor
